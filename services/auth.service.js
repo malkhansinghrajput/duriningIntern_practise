@@ -51,13 +51,29 @@ class AuthService {
     }
 
     const newAccessToken = createAccessToken(user._id, user.role);
+    const newRefreshToken = createRefreshToken(user._id, user.role);
 
-    return { accessToken: newAccessToken };
+    await userDao.updateRefreshToken(user._id, newRefreshToken);
+    return { accessToken: newAccessToken, refreshToken: newRefreshToken };
   }
 
   async logout(userId) {
     await userDao.updateRefreshToken(userId, null);
   }
+
+  async getAllUsers() {
+    return userDao.getAllUsers();
+  }
+
+  async deleteUser(id) {
+    return userDao.deleteUser(id);
+  }
+
+  async getProfile(id) {
+    return userDao.getUserById;
 }
+}
+
+
 
 export default new AuthService();

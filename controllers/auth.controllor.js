@@ -13,7 +13,10 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
-    const data = await AuthService.login(req.body);
+    const { user, accessToken, refreshToken } = await AuthService.login(req.body);
+
+    res.cookie("accessToken", accessToken, { httpOnly: true });
+    res.cookie("refreshToken", refreshToken, { httpOnly: true });
     sendSuccess(res, "Login success", 200, data);
   } catch (e) {
     sendFail(res, e.message, 400);
@@ -22,7 +25,11 @@ export const login = async (req, res) => {
 
 export const refresh = async (req, res) => {
   try {
-    const data = await AuthService.refresh(req.body.refreshToken);
+     const { accessToken, refreshToken } =
+      await AuthService.refresh(req.cookies.refreshToken);
+
+    res.cookie("accessToken", accessToken, { httpOnly: true });
+    res.cookie("refreshToken", refreshToken, { httpOnly: true });
     sendSuccess(res, "New token", 200, data);
   } catch (e) {
     sendFail(res, e.message, 401);
@@ -30,6 +37,36 @@ export const refresh = async (req, res) => {
 };
 
 export const logout = async (req, res) => {
-  await AuthService.logout(req.body.userId);
+ await AuthService.logout(req.user.userId);
+
+  res.clearCookie("accessToken");
+  res.clearCookie("refreshToken");
   sendSuccess(res, "Logout", 200);
+};
+
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await AuthService.getAllUsers();
+    res.json(users);
+  } catch (err) {
+    res.status(400).json({ msg: err.message });
+  }
+};
+
+export const deleteUser = async (req, res) => {
+  try {
+    await AuthService.deleteUser(req.params.id);
+    res.json({ msg: "User deleted" });
+  } catch (err) {
+    res.status(400).json({ msg: err.message });
+  };
+}
+
+  export const userProfile = async (req, res) => {
+  try {
+    await AuthService.getProfile(req.params.id);
+      res.json(user);
+  } catch (err) {
+    res.status(500).json({ msg: "Error fetching profile" });
+  }
 };

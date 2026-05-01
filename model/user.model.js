@@ -4,7 +4,11 @@ const userSchema = new mongoose.Schema({
   name: String,
   email: { type: String, unique: true },
   password: String,
-  role: String,
+    role: {
+    type: String,
+    enum: ["customer", "admin", "superAdmin"],
+    default: "customer",
+  },
   refreshToken: String
 }, { timestamps: true });
 
