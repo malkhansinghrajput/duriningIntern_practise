@@ -1,17 +1,50 @@
 import jwt from "jsonwebtoken";
+import { verifyAccessToken } from "../utils/jwt.util.js";
 
 export const protect = (req, res, next) => {
   try {
-    const token = req.cookies.accessToken;
+    const authHeader = req.headers.authorization;
 
-    if (!token) return res.status(401).json({ msg: "No token" });
+    // Check header exists
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ 
+        success: false,
+        message: "No token provided" 
+      });
+    }
 
-    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const token = authHeader.split(" ")[1];
 
-    req.user = decoded;
+    // Verify token
+    const decoded = verifyAccessToken(token);
+
+    // Attach user
+    req.user = {
+      userId: decoded.userId,
+      role: decoded.role,
+    };
 
     next();
-  } catch {
-    res.status(401).json({ msg: "Invalid token" });
+
+  } catch (err) {
+    // Handle specific errors
+    if (err.name === "TokenExpiredError") {
+      return res.status(401).json({ 
+        success: false,
+        message: "Token expired" 
+      });
+    }
+
+    if (err.name === "JsonWebTokenError") {
+      return res.status(401).json({ 
+        success: false,
+        message: "Invalid token" 
+      });
+    }
+
+    return res.status(500).json({ 
+      success: false,
+      message: "Server error" 
+    });
   }
 };

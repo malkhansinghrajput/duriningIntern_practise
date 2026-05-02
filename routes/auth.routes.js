@@ -2,30 +2,32 @@ import express from "express";
 import {
   register,
   login,
-  refresh,
+  refreshToken,
   logout,
+  getProfile,
   getAllUsers,
   deleteUser,
-  userProfile
+  promoteUser
 } from "../controllers/auth.controllor.js";
 import { protect } from "../middleware/auth.middleware.js";
-import {authorizeRoles} from "../middleware/role.midleware.js"
+import { authorizeRoles } from "../middleware/authorize.middleware.js";
 
 const router = express.Router();
 
+// Public routes
 router.post("/register", register);
 router.post("/login", login);
-router.post("/refresh", refresh);
-router.post("/logout", logout);
+router.post("/refresh", refreshToken);
 
-//  profile
-router.get("/profile", protect, userProfile);
+// Protected routes
+router.post("/logout", protect, logout);
+router.get("/profile", protect, getProfile);
 
-// admin
-router.get("/users", protect, authorizeRoles("admin", "superAdmin"), getAllUsers)
+// Admin routes (admin and super_admin)
+router.get("/users", protect, authorizeRoles(["admin", "super_admin"]), getAllUsers);
 
-
-// super admin
-router.delete("/user/:id", protect, authorizeRoles("superAdmin"), deleteUser)
+// Super admin routes
+router.delete("/users/:id", protect, authorizeRoles(["super_admin"]), deleteUser);
+router.patch("/users/promote/:id", protect, authorizeRoles(["super_admin"]), promoteUser);
 
 export default router;

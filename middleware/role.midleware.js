@@ -1,8 +1,6 @@
-export const authorizeRoles = (...roles) => {
-  return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ msg: "Access denied" });
-    }
-    next();
-  };
-};
+// This middleware has been replaced by authorize.middleware.js
+// Please use authorizeRoles from authorize.middleware.js instead
+
+import { authorizeRoles } from "./authorize.middleware.js";
+
+export { authorizeRoles };
