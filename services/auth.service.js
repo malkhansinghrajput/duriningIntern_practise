@@ -59,79 +59,94 @@ class AuthService {
    * Login user and return tokens
    */
   async login(data) {
-    const { email, password } = data;
+  let { email, password } = data;
 
-    // Validate input
-    if (!email || !password) {
-      throw new ApiError(400, "Email and password are required");
-    }
+  // Normalize email
+  email = email?.toLowerCase().trim();
 
-    // Get user
-    const user = await userDao.getUserByEmail(email);
-    if (!user) {
-      throw new ApiError(401, "Invalid email or password");
-    }
-
-    // Check if user is active
-    if (!user.isActive) {
-      throw new ApiError(401, "User account is disabled");
-    }
-
-    // Verify password
-    const match = await compareItems(password, user.password);
-    if (!match) {
-      throw new ApiError(401, "Invalid email or password");
-    }
-
-    // Generate tokens
-    const accessToken = createAccessToken(user._id, user.role);
-    const refreshToken = createRefreshToken(user._id, user.role);
-
-    // Save refresh token
-    await userDao.updateRefreshToken(user._id, refreshToken);
-
-    return {
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      },
-      accessToken,
-      refreshToken
-    };
+  // Validate input
+  if (!email || !password) {
+    throw new ApiError(400, "Email and password are required");
   }
 
+  // Get user (lean object)
+  const user = await userDao.getUserByEmail(email);
+  if (!user) {
+    throw new ApiError(401, "Invalid email or password");
+  }
+
+  // Check if user is active
+  if (!user.isActive) {
+    throw new ApiError(401, "User account is disabled");
+  }
+
+  // Verify password
+  const isMatch = await compareItems(password, user.password);
+  if (!isMatch) {
+    throw new ApiError(401, "Invalid email or password");
+  }
+
+  // Generate tokens
+  const accessToken = createAccessToken(user._id, user.role);
+  const refreshToken = createRefreshToken(user._id, user.role);
+
+  //  Hash refresh token before saving
+  const hashedRefreshToken = await hashItem(refreshToken);
+
+  // Save hashed refresh token
+  await userDao.updateRefreshToken(user._id, hashedRefreshToken);
+
+  return {
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role
+    },
+    accessToken,
+    refreshToken // send original token to client
+  };
+}
   /**
    * Refresh access token
    */
   async refreshToken(refreshToken) {
-    if (!refreshToken) {
-      throw new ApiError(401, "Refresh token is required");
-    }
-
-    const decoded = verifyRefreshToken(refreshToken);
-    const user = await userDao.getUserById(decoded.userId);
-
-    if (!user || user.refreshToken !== refreshToken) {
-      throw new ApiError(401, "Invalid refresh token");
-    }
-
-    if (!user.isActive) {
-      throw new ApiError(401, "User account is disabled");
-    }
-
-    const newAccessToken = createAccessToken(user._id, user.role);
-    const newRefreshToken = createRefreshToken(user._id, user.role);
-
-    await userDao.updateRefreshToken(user._id, newRefreshToken);
-
-    return {
-      accessToken: newAccessToken,
-      refreshToken: newRefreshToken
-    };
+  if (!refreshToken) {
+    throw new ApiError(401, "Refresh token is required");
   }
 
+  const decoded = verifyRefreshToken(refreshToken);
+
+  const user = await userDao.getUserById(decoded.userId);
+
+  if (!user) {
+    throw new ApiError(401, "Invalid refresh token");
+  }
+
+  // compare hashed token
+  const isMatch = await compareItems(refreshToken, user.refreshToken);
+
+  if (!isMatch) {
+    throw new ApiError(401, "Invalid refresh token");
+  }
+
+  if (!user.isActive) {
+    throw new ApiError(401, "User account is disabled");
+  }
+
+  const newAccessToken = createAccessToken(user._id, user.role);
+  const newRefreshToken = createRefreshToken(user._id, user.role);
+
+  // hash new refresh token
+  const hashedNewRefreshToken = await hashItem(newRefreshToken);
+
+  await userDao.updateRefreshToken(user._id, hashedNewRefreshToken);
+
+  return {
+    accessToken: newAccessToken,
+    refreshToken: newRefreshToken
+  };
+}
   /**
    * Logout user
    */
@@ -173,7 +188,7 @@ class AuthService {
 
     // Prevent deleting last super admin
     if (targetUser.role === ROLES.SUPER_ADMIN) {
-      const superAdminCount = await userDao.getUserCount(); // This needs to be fixed
+      const superAdminCount = await userDao.getSuperAdminCount(); 
       if (superAdminCount <= 1) {
         throw new ApiError(400, "Cannot delete the last super admin");
       }
