@@ -7,19 +7,22 @@ import { initializeDatabase } from "./utils/db-init.util.js";
 import authRoutes from "./routes/auth.routes.js";
 import taskRoutes from "./routes/task.route.js";
 import permissionRoutes from "./routes/permission.route.js";
+import morgan from "morgan";
+
 
 dotenv.config();
 
 const app = express();
 
 // Initialize database
-connectDB();
-initializeDatabase();
+await connectDB();
+await initializeDatabase();
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(morgan("dev"));
 
 // Routes
 app.use("/api/auth", authRoutes);

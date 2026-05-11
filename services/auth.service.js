@@ -213,8 +213,9 @@ class AuthService {
     }
 
     const targetUser = await userDao.getUserById(targetUserId);
-    if (!targetUser) {
-      throw new ApiError(404, "User not found");
+    
+    if (!targetUser || !targetUser.isActive) {
+      throw new ApiError(404, "User not found or Blocked");
     }
 
     return userDao.updateUserRole(targetUserId, newRole);

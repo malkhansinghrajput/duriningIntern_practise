@@ -30,6 +30,9 @@ const updateUserRole = (userId, role) =>
 const getSuperAdminCount = () => {
   return User.countDocuments({ role: "super_admin", isActive: true });
 };
+const getUserCount = () => {
+  return User.countDocuments()
+}
 
 export default {
   getUserByEmail,
@@ -41,5 +44,6 @@ export default {
   hardDeleteUser,
   updateRefreshToken,
   updateUserRole,
- getSuperAdminCount
+ getSuperAdminCount,
+ getUserCount
 };

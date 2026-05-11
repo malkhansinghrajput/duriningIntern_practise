@@ -1,7 +1,8 @@
 import cloudinary from "../config/clodnary.js";
 import taskDao from "../daos/dao.task.js";
+import userDao from "../daos/user.daos.js";
 import { ApiError } from "../utils/error.util.js";
-import { TASK_STATUS } from "../constants/common.constant.js";
+import { TASK_STATUS, ROLES } from "../constants/common.constant.js";
 
 class TaskService {
 
@@ -16,15 +17,31 @@ class TaskService {
       throw new ApiError(400, "Title and assignedTo are required");
     }
 
+    // Validate assigned user exists
+    const assignedUser = await userDao.getUserById(assignedTo);
+    if (!assignedUser) {
+      throw new ApiError(404, "Assigned user not found");
+    }
+
+    // Validate due date
+    if (dueDate && new Date(dueDate) < new Date()) {
+      throw new ApiError(400, "Due date cannot be in the past");
+    }
+
     let imageUrl = "";
 
+    // Validate & upload image
     if (file) {
+      if (!file.mimetype.startsWith("image/")) {
+        throw new ApiError(400, "Only image files allowed");
+      }
+
       const result = await cloudinary.uploader.upload(file.path);
       imageUrl = result.secure_url;
     }
 
     const task = await taskDao.createTask({
-      title,
+      title: title.trim(),
       description,
       assignedTo,
       assignedBy: userId,
@@ -38,10 +55,10 @@ class TaskService {
   }
 
   /**
-   * Get all tasks (for super admin/admin)
+   * Get all tasks
    */
-  async getAllTasks() {
-    return taskDao.getAllTasks();
+  async getAllTasks(page = 1, limit = 10) {
+    return taskDao.getAllTasks(page, limit);
   }
 
   /**
@@ -63,9 +80,11 @@ class TaskService {
    */
   async getTaskById(taskId) {
     const task = await taskDao.getTaskById(taskId);
+
     if (!task) {
       throw new ApiError(404, "Task not found");
     }
+
     return task;
   }
 
@@ -74,28 +93,54 @@ class TaskService {
    */
   async updateTask(taskId, data, userId, userRole) {
     const task = await taskDao.getTaskById(taskId);
-    
+
     if (!task) {
       throw new ApiError(404, "Task not found");
     }
 
-    // Check authorization
-    // Only task assignee can update status, admin can update anything
-    const { status, ...otherData } = data;
-    
-    // If only updating status, user must be assignee
-    if (status && task.assignedTo._id.toString() !== userId) {
-      if (userRole !== "admin" && userRole !== "super_admin") {
+    const { status, image, ...otherData } = data;
+
+    // 🔐 Strict authorization
+    if (userRole !== ROLES.ADMIN && userRole !== ROLES.SUPER_ADMIN) {
+      // Normal user → only status update allowed
+      if (Object.keys(data).some(key => key !== "status")) {
+        throw new ApiError(403, "You can only update task status");
+      }
+
+      // Only assignee can update status
+      if (task.assignedTo._id.toString() !== userId) {
         throw new ApiError(403, "You can only update your assigned tasks");
       }
     }
 
-    // Validate status if provided
+    // Validate status
     if (status && !Object.values(TASK_STATUS).includes(status)) {
       throw new ApiError(400, "Invalid task status");
     }
 
-    const updateData = { ...otherData };
+    // Handle image update
+    let imageUrl = task.image;
+
+    if (image) {
+      if (!image.mimetype.startsWith("image/")) {
+        throw new ApiError(400, "Only image files allowed");
+      }
+
+      // Delete old image if exists
+      if (task.image) {
+        const publicId = task.image.split("/").pop().split(".")[0];
+        await cloudinary.uploader.destroy(publicId);
+      }
+
+      const result = await cloudinary.uploader.upload(image.path);
+      imageUrl = result.secure_url;
+    }
+
+    const updateData = {
+      ...otherData,
+      image: imageUrl
+    };
+
     if (status) updateData.status = status;
 
     return taskDao.updateTask(taskId, updateData);
@@ -104,10 +149,26 @@ class TaskService {
   /**
    * Delete task
    */
-  async deleteTask(taskId) {
+  async deleteTask(taskId, userId, userRole) {
     const task = await taskDao.getTaskById(taskId);
+
     if (!task) {
       throw new ApiError(404, "Task not found");
+    }
+
+    // Only creator or admin can delete
+    if (
+      task.assignedBy._id.toString() !== userId &&
+      userRole !== ROLES.ADMIN &&
+      userRole !== ROLES.SUPER_ADMIN
+    ) {
+      throw new ApiError(403, "Not allowed to delete this task");
+    }
+
+    // Delete image from cloudinary
+    if (task.image) {
+      const publicId = task.image.split("/").pop().split(".")[0];
+      await cloudinary.uploader.destroy(publicId);
     }
 
     return taskDao.deleteTask(taskId);

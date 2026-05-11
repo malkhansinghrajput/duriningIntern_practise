@@ -9,6 +9,10 @@ import { errorHandler } from "../utils/error.util.js";
  */
 export const createTask = async (req, res) => {
   try {
+    if (!req.body || !req.body.title || !req.body.assignedTo) {
+      return sendFail(res, "Title and assignedTo are required", STATUS_CODES.BAD_REQUEST);
+    }
+
     const task = await TaskService.createTask(
       req.body,
       req.file,
@@ -27,7 +31,10 @@ export const createTask = async (req, res) => {
  */
 export const getAllTasks = async (req, res) => {
   try {
-    const tasks = await TaskService.getAllTasks();
+    const { page = 1, limit = 10 } = req.query;
+
+    const tasks = await TaskService.getAllTasks(Number(page), Number(limit));
+
     sendSuccess(res, "Tasks retrieved", STATUS_CODES.SUCCESS, { tasks });
   } catch (error) {
     errorHandler(error, res);
@@ -41,6 +48,7 @@ export const getAllTasks = async (req, res) => {
 export const getMyTasks = async (req, res) => {
   try {
     const tasks = await TaskService.getTasksByUser(req.user.userId);
+
     sendSuccess(res, "Tasks retrieved", STATUS_CODES.SUCCESS, { tasks });
   } catch (error) {
     errorHandler(error, res);
@@ -53,7 +61,14 @@ export const getMyTasks = async (req, res) => {
  */
 export const getTask = async (req, res) => {
   try {
-    const task = await TaskService.getTaskById(req.params.id);
+    const { id } = req.params;
+
+    if (!id) {
+      return sendFail(res, "Task ID is required", STATUS_CODES.BAD_REQUEST);
+    }
+
+    const task = await TaskService.getTaskById(id);
+
     sendSuccess(res, "Task retrieved", STATUS_CODES.SUCCESS, { task });
   } catch (error) {
     errorHandler(error, res);
@@ -66,8 +81,18 @@ export const getTask = async (req, res) => {
  */
 export const updateTask = async (req, res) => {
   try {
+    const { id } = req.params;
+
+    if (!id) {
+      return sendFail(res, "Task ID is required", STATUS_CODES.BAD_REQUEST);
+    }
+
+    if (!req.body || Object.keys(req.body).length === 0) {
+      return sendFail(res, "No update data provided", STATUS_CODES.BAD_REQUEST);
+    }
+
     const task = await TaskService.updateTask(
-      req.params.id,
+      id,
       req.body,
       req.user.userId,
       req.user.role
@@ -85,7 +110,18 @@ export const updateTask = async (req, res) => {
  */
 export const deleteTask = async (req, res) => {
   try {
-    await TaskService.deleteTask(req.params.id);
+    const { id } = req.params;
+
+    if (!id) {
+      return sendFail(res, "Task ID is required", STATUS_CODES.BAD_REQUEST);
+    }
+
+    await TaskService.deleteTask(
+      id,
+      req.user.userId,
+      req.user.role
+    );
+
     sendSuccess(res, "Task deleted successfully", STATUS_CODES.SUCCESS);
   } catch (error) {
     errorHandler(error, res);
@@ -98,7 +134,14 @@ export const deleteTask = async (req, res) => {
  */
 export const getTasksByStatus = async (req, res) => {
   try {
-    const tasks = await TaskService.getTasksByStatus(req.params.status);
+    const { status } = req.params;
+
+    if (!status) {
+      return sendFail(res, "Status is required", STATUS_CODES.BAD_REQUEST);
+    }
+
+    const tasks = await TaskService.getTasksByStatus(status);
+
     sendSuccess(res, "Tasks retrieved", STATUS_CODES.SUCCESS, { tasks });
   } catch (error) {
     errorHandler(error, res);

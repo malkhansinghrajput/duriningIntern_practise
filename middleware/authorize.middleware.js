@@ -41,7 +41,11 @@ export const authorizeRole = (role) => {
  */
 export const authorizeRoles = (roles) => {
   return (req, res, next) => {
-    if (!hasAnyRole(req.user.role, roles)) {
+    if (!req.user || !req.user.role) {
+      return sendFail(res, "Unauthorized", STATUS_CODES.UNAUTHORIZED);
+    }
+
+    if (!roles.includes(req.user.role)) {
       return sendFail(res, "Forbidden - Insufficient role", STATUS_CODES.FORBIDDEN);
     }
     next();
