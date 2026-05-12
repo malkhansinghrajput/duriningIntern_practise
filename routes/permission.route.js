@@ -15,16 +15,17 @@ const router = express.Router();
 
 // All routes require authentication
 router.use(protect);
+router.use(authorizeRoles(["super_admin"]));
 
 // Get permissions (super admin only)
-router.get("/", authorizeRoles(["super_admin"]), getAllPermissions);
-router.get("/role/:role", authorizeRoles(["super_admin"]), getPermissionsByRole);
-router.get("/user/:userId", authorizeRoles(["super_admin"]), getPermissionsByUser);
+router.get("/", getAllPermissions);
+router.get("/role/:role", getPermissionsByRole);
+router.get("/user/:userId", getPermissionsByUser);
 
 // Grant/revoke permissions (super admin only)
-router.post("/user", authorizeRoles(["super_admin"]), grantUserPermission);
-router.post("/role", authorizeRoles(["super_admin"]), grantRolePermission);
-router.delete("/user/:userId/:permissionId", authorizeRoles(["super_admin"]), revokeUserPermission);
-router.delete("/role/:role/:permissionId", authorizeRoles(["super_admin"]), revokeRolePermission);
+router.post("/user", grantUserPermission);
+router.post("/role", grantRolePermission);
+router.delete("/user/:userId/:permissionId", revokeUserPermission);
+router.delete("/role/:role/:permissionId",  revokeRolePermission);
 
-export default router;
+export default router;   

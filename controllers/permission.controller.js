@@ -8,7 +8,7 @@ import { errorHandler } from "../utils/error.util.js";
  * Grant permission to user
  * POST /api/permissions/user
  */
-export const grantUserPermission = async (req, res) => {
+export const  grantUserPermission = async (req, res) => {
   try {
     const { userId, permissionName, type } = req.body;
 
