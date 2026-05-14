@@ -74,6 +74,23 @@ export const initializeDatabase = async () => {
         resource: "task",
         action: "assign"
       },
+      {
+        name: "task:my",
+        resource: "task",
+        action: "my"
+      },
+
+      {
+        name: "task:status",
+        resource: "task",
+        action: "status"
+      },
+
+      // {
+      //   name: "task:single",
+      //   resource: "task",
+      //   action: "single"
+      // },
 
 
       // USER

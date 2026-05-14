@@ -1,4 +1,5 @@
 import express from "express";
+
 import {
   createTask,
   getAllTasks,
@@ -8,46 +9,82 @@ import {
   deleteTask,
   getTasksByStatus
 } from "../controllers/task.controller.js";
-
 import { protect } from "../middleware/auth.middleware.js";
-import { authorizeRoles } from "../middleware/authorize.middleware.js";
+import { authorize } from "../middleware/authorize.middleware.js";
 import { upload } from "../middleware/upload.middlewre.js";
-import { ROLES } from "../constants/common.constant.js";
 
 const router = express.Router();
 
-//  All routes require authentication
+
 router.use(protect);
 
-//  User routes
-router.get("/my-tasks", getMyTasks);
+// ======================================
+// USER ROUTES
+// ======================================
 
-//  IMPORTANT: Specific routes FIRST
-router.get("/status/:status", authorizeRoles([ROLES.SUPER_ADMIN]), getTasksByStatus);
+// My Tasks
+router.get(
+  "/my-tasks",
+  authorize("task:my"),
+  getMyTasks
+);
 
-// Admin & Super Admin routes
+// Tasks By Status
+router.get(
+  "/status/:status",
+  authorize("task:status"),
+  getTasksByStatus
+);
+
+// ======================================
+// CREATE TASK
+// ======================================
+
 router.post(
   "/",
   upload.single("image"),
-  authorizeRoles([ROLES.ADMIN, ROLES.SUPER_ADMIN]),
+  authorize("task:create"),
   createTask
 );
 
+// ======================================
+// DELETE TASK
+// ======================================
+
 router.delete(
   "/:id",
-  authorizeRoles([ROLES.ADMIN, ROLES.SUPER_ADMIN]),
+  authorize("task:delete"),
   deleteTask
 );
 
-// Super Admin only
+// ======================================
+// GET ALL TASKS
+// ======================================
+
 router.get(
   "/",
-  authorizeRoles([ROLES.SUPER_ADMIN]),
+  authorize("task:read"),
   getAllTasks
 );
 
-//  General authenticated routes (keep LAST)
-router.get("/:id", getTask);
-router.put("/:id", updateTask);
+// ======================================
+// GET SINGLE TASK
+// ======================================
+
+router.get(
+  "/:id",
+  authorize("task:single"),
+  getTask
+);
+
+// ======================================
+// UPDATE TASK
+// ======================================
+
+router.put(
+  "/:id",
+  authorize("task:update"),
+  updateTask
+);
 
 export default router;

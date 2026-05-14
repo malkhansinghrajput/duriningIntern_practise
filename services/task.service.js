@@ -28,7 +28,7 @@ class TaskService {
       throw new ApiError(400, "Due date cannot be in the past");
     }
 
-    let imageUrl = "";
+    let imageUrl = "xyz";
 
     // Validate & upload image
     if (file) {

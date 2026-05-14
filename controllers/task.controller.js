@@ -134,7 +134,7 @@ export const deleteTask = async (req, res) => {
  */
 export const getTasksByStatus = async (req, res) => {
   try {
-    const { status } = req.params;
+    const { status } = req.params;  
 
     if (!status) {
       return sendFail(res, "Status is required", STATUS_CODES.BAD_REQUEST);

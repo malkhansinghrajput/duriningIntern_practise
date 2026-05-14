@@ -28,4 +28,4 @@ router.post("/role", grantRolePermission);
 router.delete("/user/:userId/:permissionId", revokeUserPermission);
 router.delete("/role/:role/:permissionId",  revokeRolePermission);
 
-export default router;   
+export default router;    

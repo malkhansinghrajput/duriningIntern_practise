@@ -29,7 +29,10 @@ resource: {
     "delete",
     "assign",
     "manage",
-    "promote"
+    "promote",
+    "my",
+    "status",
+
   ],
 }
 

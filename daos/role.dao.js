@@ -6,6 +6,7 @@ const createRole = (data) => Role.create(data);
 
 const getAllRoles = () => Role.find().lean();
 
+
 export default {
   getRoleByName,
   createRole,

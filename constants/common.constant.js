@@ -22,7 +22,10 @@ export const PERMISSIONS = {
   TASK_UPDATE: "task:update",
   TASK_DELETE: "task:delete",
   TASK_ASSIGN: "task:assign",
-  
+  TASK_MY: "task:my",
+  TASK_STATUS: "task:status",
+  TASK_SINGLE: "task:single",
+
   // User permissions
   USER_READ: "user:read",
   USER_DELETE: "user:delete",

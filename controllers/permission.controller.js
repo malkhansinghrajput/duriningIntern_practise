@@ -69,7 +69,7 @@ export const revokeRolePermission = async (req, res) => {
     sendSuccess(res, "Permission revoked from role", STATUS_CODES.SUCCESS);
   } catch (error) {
     errorHandler(error, res);
-  }
+  } 
 };
 
 /**

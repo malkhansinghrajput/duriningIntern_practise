@@ -8,6 +8,7 @@ import {
 import * as permissionDao from "../daos/permission.dao.js";
 import { ApiError, errors } from "../utils/error.util.js";
 import { ROLES } from "../constants/common.constant.js";
+import roleDao from "../daos/role.dao.js"
 
 class AuthService {
 
@@ -236,10 +237,12 @@ class AuthService {
   /**
    * Assign permission to role
    */
-  async assignPermissionToRole(role, permissionName) {
+  async assignPermissionToRole(roleName, permissionName) {
     const permission = await permissionDao.getPermissionByName(permissionName);
-    if (!permission) {
-      throw new ApiError(404, "Permission not found");
+     const role = await roleDao.getRoleByName(roleName);
+    
+    if (!permission || !role) {
+      throw new ApiError(404, "Permission not found or role not define");
     }
 
     return permissionDao.assignPermissionToRole(role, permission._id);

@@ -38,4 +38,4 @@ rolePermissionSchema.index(
 export default mongoose.model(
   "RolePermission",
   rolePermissionSchema
-);
+); 
